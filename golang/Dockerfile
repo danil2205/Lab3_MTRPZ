@@ -1,8 +1,12 @@
-FROM golang:latest
+FROM golang:latest AS builder
 WORKDIR /app
 COPY go.sum go.mod /app/
 RUN go mod download
 COPY . .
-RUN go build -o build/fizzbuzz
+RUN CGO_ENABLED=0 go build -ldflags '-extldflags "-static"' -o build/fizzbuzz
+
+FROM scratch
+COPY --from=builder /app/build/fizzbuzz /fizzbuzz
+COPY --from=builder /app/templates /templates
 EXPOSE 8080
-CMD ["./build/fizzbuzz", "serve"]
+CMD ["/fizzbuzz", "serve"]
